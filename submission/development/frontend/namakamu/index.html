@@ -1,0 +1,146 @@
+<?php
+
+//untuk memulai session php
+session_start();
+
+//inisialisasi session array todos
+if(!isset($_SESSION['todos'])){
+    $_SESSION['todos'] = [];
+}
+
+//fungsi untuk menambahkan data
+if(isset($_POST['tambahdata'])){
+    $newData = [
+        'nama' => $_POST['nama'],
+        'status' => 'belum selesai',
+        'prioritas' => $_POST['prioritas'],
+        'tanggal' => $_POST['tanggal']
+    ];
+    array_push($_SESSION['todos'], $newData);
+}
+
+//fungsi untuk mengubah atau mengedit status
+if(isset($_POST['status'])){
+    $index = $_POST['index'];
+    $_SESSION['todos'][$index]['status'] = 
+    $_SESSION['todos'][$index]['status'] == 'selesai' ? 'belum selesai' : 'selesai';
+}
+
+//fungsi untuk menghapus data
+if(isset($_POST['hapus'])){
+    $index = $_POST['index'];
+    array_splice($_SESSION['todos'], $index, 1);
+}
+
+//fungsi untuk menngupdate/mengedit data
+if(isset($_POST['update'])){
+    $index = $_POST['edit-index'];
+    $_SESSION['todos'][$index] = [
+        'nama' => $_POST['edit-nama'],
+        'prioritas' => $_POST['edit-prioritas'],
+        'tanggal' => $_POST['edit-tanggal'],
+        'status' => $_SESSION['todos'][$index]['status']
+    ];
+}
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo-List</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ini judul di browser -->
+    <h1>Todo-List</h1>
+    <!-- Form untuk menambahkan data -->
+    <form method="POST">
+        <input type="text" name="nama" placeholder="Nama Tugas" required>
+        <select name="prioritas" required>
+            <option value="">Tingkat prioritas</option>
+            <option value="tinggi">Tinggi</option>
+            <option value="sedang">Sedang</option>
+            <option value="rendah">Rendah</option>
+        </select>
+        <input type="date" name="tanggal" required>
+        <button type="submit" name="tambahdata">Tambah</button>
+    </form>
+
+    <!-- Menggunakan perulangan foreach dan html untuk menampilkan data array pada browser -->
+    <?php foreach($_SESSION['todos'] as $index => $data): ?>
+        <div class="todo-item <?php echo $data['status'] == 'selesai' ? 'selesai' : ''; ?> <?php echo $data['prioritas']; ?>">
+            <div>
+                <!-- htmlspecialchars berfungsi untuk sebagai keamanan dan mengkonversikan data special dari php ke html untuk ditampilkan -->
+                <strong><?php echo htmlspecialchars($data['nama']); ?></strong>
+                <br>
+                Prioritas: <?php echo htmlspecialchars($data['prioritas']); ?>
+                <br>
+                <!-- fungsi date dan strtotime sebagai konversi tanggal bahasa inggris menjadi penyesuaian dengan posisi tanggal yang kita inginkan -->
+                Tanggal: <?php echo htmlspecialchars(date('d/m/Y', strtotime($data['tanggal']))); ?>
+                <br>
+                Status: <?php echo htmlspecialchars($data['status']); ?>
+                <!-- Button untuk aksi mengubah status -->
+                <!-- untuk sebagai fungsi menampilkan localhost konfirmasi sebelum data dihapus -->
+                <br>
+
+                <!-- INI FORM EDIT -->
+                <div class="edit-form" id="editForm-<?php echo $index; ?>" style="display: none;">
+                <form method="POST">
+                    <input type="hidden" name="edit-index" value="<?php echo $index; ?>">
+                    <input type="text" name="edit-nama" value="<?php echo htmlspecialchars($data['nama']); ?>" required>
+                    <select name="edit-prioritas" required>
+                        <option value="">Tingkat prioritas</option>
+                        <option value="tinggi" <?php echo $data['prioritas'] == 'tinggi' ? 'selected' : ''; ?>>Tinggi</option>
+                        <option value="sedang" <?php echo $data['prioritas'] == 'sedang' ? 'selected' : ''; ?>>Sedang</option>
+                        <option value="rendah" <?php echo $data['prioritas'] == 'rendah' ? 'selected' : ''; ?>>Rendah</option>
+                    </select>
+                    <input type="date" name="edit-tanggal" value="<?php echo htmlspecialchars($data['tanggal']); ?>" required>
+                    <button type="submit" name="update">Simpan</button>
+                    <button type="button" onclick="statusEditForm(<?php echo $index; ?>)">Batal</button>
+                </form>
+                </div>
+
+                <!-- aksi JavaScript -->
+                <script>
+                    // fungsi untuk menampilkan alert sebelum ke aksi hapus
+                    function konfirmasiHapus(namaTugas){
+                        return confirm(`Apakah anda yakin ingin menghapus tugas "${namaTugas}"?`);
+                    }
+                    // fungsi untuk menampilkan form edit melalui ID(index)
+                    function statusEditForm(index){
+                        const editForm = document.getElementById(`editForm-${index}`);
+                        if (editForm){
+                            editForm.style.display =  editForm.style.display === 'none' ? 'block' : 'none';
+                        }
+                    }
+                </script>
+
+                <!-- ini aksi button untuk menampilkan form edit -->
+                <button type="button" name="edit" onclick="statusEditForm(<?php echo $index; ?>)">Edit</button>
+                <br>
+                <br>
+                <!-- button untuk aksi selesai -->
+                <form method="POST" class="display: inline;">
+                    <input type="hidden" name="index" value="<?php echo $index; ?>">
+                    <button type="submit" name="status">
+                        <?php echo $data['status'] == 'selesai' ? 'belum selesai' : 'selesai'; ?>
+                    </button>
+                </form>
+
+                <!-- Button untuk aksi menghapus data array -->
+                <!-- onsumbit berfungsi untuk mengirimkan aksi konfirmasi hapus agar dapat dijalankan JS -->
+                <form method="POST" class="display: inline;" onsubmit="return konfirmasiHapus('<?php echo htmlspecialchars($data['nama']); ?>')">
+                    <input type="hidden" name="index" value="<?php echo $index; ?>">
+                    <button type="submit" name="hapus">Hapus</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- untuk mengakhiri dan menutup perulangan foreach -->
+        <?php endforeach; ?>
+
+</body>
+</html>
